@@ -1,0 +1,8 @@
+hopsworks
+pandas
+scikit-learn
+tensorflow
+streamlit
+shap
+requests
+python-dotenv

@@ -1,0 +1,39 @@
+name: Hourly Feature Pipeline
+
+on:
+  schedule:
+    # Runs at minute 0 of every hour, UTC time (GitHub Actions cron is always UTC)
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    # Lets you trigger it manually from the Actions tab, for testing
+
+jobs:
+  run-feature-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run feature pipeline
+        env:
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
+          HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
+          HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
+          CITY_NAME: ${{ secrets.CITY_NAME }}
+          CITY_COUNTRY: ${{ secrets.CITY_COUNTRY }}
+          CITY_LAT: ${{ secrets.CITY_LAT }}
+          CITY_LON: ${{ secrets.CITY_LON }}
+          CITY_TIMEZONE: ${{ secrets.CITY_TIMEZONE }}
+        run: |
+          python feature_pipeline/feature_pipeline.py

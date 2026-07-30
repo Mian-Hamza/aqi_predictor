@@ -13,7 +13,7 @@ returning a stale, unchanging AQI value across runs. Instead, 'aqi' is now
 calculated locally from PM2.5/PM10 concentrations using the standard US EPA
 breakpoint formula (0-500 scale) -- see calculate_us_aqi() below. This is
 far more sensitive to real changes than OpenWeather's own coarse 1-5 'aqi'
-category, which is kept in the row as 'ow_aqi_category' for reference only.
+category, which is no longer stored in the row.
 
 Env vars required (put these in a local .env file, and as GitHub Secrets later):
   OPENWEATHER_API_KEY  -> from https://openweathermap.org/api (weather + all pollutants + AQI)
@@ -53,6 +53,8 @@ REQUIRED_ENV_VARS = (
     "HOPSWORKS_API_KEY",
     "HOPSWORKS_PROJECT",
 )
+
+DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
 
 def _require_env() -> None:
@@ -138,8 +140,6 @@ def calculate_us_aqi(pm25: float, pm10: float) -> float:
 def fetch_openweather_pollution(lat: float, lon: float) -> dict:
     """
     Fetch AQI + pollutant concentrations from OpenWeather's Air Pollution API.
-    'aqi' here is OpenWeather's own 1-5 scale (1=Good ... 5=Very Poor) --
-    NOT the US EPA 0-500 scale. Document this clearly in your final report.
     """
     resp = requests.get(
         "https://api.openweathermap.org/data/2.5/air_pollution",
@@ -157,7 +157,6 @@ def fetch_openweather_pollution(lat: float, lon: float) -> dict:
     components = entry.get("components", {})
 
     return {
-        "ow_aqi_category": entry.get("main", {}).get("aqi"),  # OpenWeather's own 1-5 scale, kept for reference
         "pm25": components.get("pm2_5"),
         "pm10": components.get("pm10"),
         "no2": components.get("no2"),
@@ -180,8 +179,6 @@ def fetch_openweather_weather(city: str, country: str) -> dict:
     return {
         "temperature": data.get("main", {}).get("temp"),
         "feels_like": data.get("main", {}).get("feels_like"),
-        "max_temperature": data.get("main", {}).get("temp_max"),
-        "min_temperature": data.get("main", {}).get("temp_min"),
         "humidity": data.get("main", {}).get("humidity"),
         "pressure": data.get("main", {}).get("pressure"),
         "wind_speed": data.get("wind", {}).get("speed"),
@@ -198,10 +195,13 @@ def build_time_features(local_ts: datetime) -> dict:
     Using UTC here was the earlier bug -- hour/day_of_week/is_weekend would
     reflect the wrong day/time whenever local time and UTC fall on different
     calendar days or noticeably different hours.
+
+    day_of_week is returned as a lowercase weekday name (e.g. "monday")
+    rather than an integer.
     """
     return {
         "hour": local_ts.hour,
-        "day_of_week": local_ts.weekday(),  # 0=Monday ... 6=Sunday
+        "day_of_week": DAY_NAMES[local_ts.weekday()],  # "monday" ... "sunday"
         "month": local_ts.month,
         "is_weekend": int(local_ts.weekday() >= 5),
     }
@@ -317,8 +317,7 @@ def build_feature_row(fs=None) -> pd.DataFrame:
     time_feats = build_time_features(local_now)
 
     # Our own continuous US EPA AQI (0-500), computed from PM2.5/PM10 -- this
-    # is what feeds aqi_change, aqi_1h_ago, etc. OpenWeather's coarse 1-5
-    # 'ow_aqi_category' is kept in the row separately, just for reference.
+    # is what feeds aqi_change, aqi_1h_ago, etc.
     us_aqi = calculate_us_aqi(
         pm25=_to_float(pollution_data.get("pm25")),
         pm10=_to_float(pollution_data.get("pm10")),
@@ -341,7 +340,9 @@ def build_feature_row(fs=None) -> pd.DataFrame:
 
     df = pd.DataFrame([row])
 
-    numeric_cols = [c for c in df.columns if c not in ("city", "timestamp")]
+    # day_of_week is now a string (weekday name), so it's excluded from
+    # numeric coercion below along with city/timestamp.
+    numeric_cols = [c for c in df.columns if c not in ("city", "timestamp", "day_of_week")]
     for col in numeric_cols:
         df[col] = pd.to_numeric(df[col], errors="coerce")
 
@@ -350,8 +351,8 @@ def build_feature_row(fs=None) -> pd.DataFrame:
     # which locks the Hopsworks feature group schema to 'bigint' on first
     # creation -- then a later decimal value fails schema validation.
     float_cols = [
-        "aqi", "ow_aqi_category", "pm25", "pm10", "no2", "so2", "o3", "co",
-        "temperature", "feels_like", "min_temperature", "max_temperature",
+        "aqi", "pm25", "pm10", "no2", "so2", "o3", "co",
+        "temperature", "feels_like",
         "humidity", "pressure", "wind_speed",
         "aqi_1h_ago", "aqi_2h_ago", "aqi_3h_ago", "aqi_change",
     ]

@@ -8,22 +8,32 @@ Designed to be run:
   - Manually first (to test)
   - Then hourly via GitHub Actions / cron
 
-NOTE: AQICN has been removed as an AQI source. Its "Lahore" station was
-returning a stale, unchanging AQI value across runs. Instead, 'aqi' is now
-calculated locally from PM2.5/PM10 concentrations using the standard US EPA
-breakpoint formula (0-500 scale) -- see calculate_us_aqi() below. This is
-far more sensitive to real changes than OpenWeather's own coarse 1-5 'aqi'
-category, which is no longer stored in the row.
+NOTE ON DATA SOURCE: This pipeline uses Open-Meteo for EVERYTHING --
+weather, pollutant concentrations, AND the US EPA AQI itself -- instead of
+OpenWeather. Two reasons:
+  1. Open-Meteo's air-quality 'current' endpoint returns a ready-made
+     'us_aqi' field (US EPA methodology, 0-500 scale), computed server-side,
+     so we no longer need to hand-maintain EPA breakpoint tables ourselves.
+  2. backfill.py already uses Open-Meteo for historical data. Using the same
+     provider + same AQI methodology here means live-served features and
+     backfilled training data are computed identically -- no risk of two
+     separately-maintained AQI calculations silently drifting apart.
+
+Open-Meteo's AQI is based on CAMS atmospheric composition forecasts (a
+different underlying model than OpenWeather's own AQI product), so absolute
+AQI values may differ slightly from what you saw with the old OpenWeather-
+based pipeline -- the EPA formula itself is standard either way.
+
+No API key is required for Open-Meteo (non-commercial use, reasonable
+request volumes).
 
 Env vars required (put these in a local .env file, and as GitHub Secrets later):
-  OPENWEATHER_API_KEY  -> from https://openweathermap.org/api (weather + all pollutants + AQI)
   HOPSWORKS_API_KEY    -> from Hopsworks Account Settings -> API keys
   HOPSWORKS_PROJECT    -> your Hopsworks project name
-  CITY_NAME            -> e.g. "Lahore" (used for OpenWeather weather endpoint + tagging rows)
-  CITY_COUNTRY         -> e.g. "PK" (ISO country code, used for OpenWeather weather endpoint's q=City,Country)
-  CITY_LAT             -> e.g. "31.5497" (used for OpenWeather Air Pollution endpoint)
-  CITY_LON             -> e.g. "74.3436" (used for OpenWeather Air Pollution endpoint)
-  CITY_TIMEZONE        -> e.g. "Asia/Karachi" (used so hour/day/month features reflect LOCAL time, not UTC)
+  CITY_NAME            -> e.g. "Lahore" (used for tagging rows)
+  CITY_LAT             -> e.g. "31.5497" (used for both Open-Meteo endpoints)
+  CITY_LON             -> e.g. "74.3436" (used for both Open-Meteo endpoints)
+  CITY_TIMEZONE        -> e.g. "Asia/Karachi" (used so hour/day/month/timestamp reflect LOCAL time, not UTC)
 """
 
 import os
@@ -36,11 +46,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 HOPSWORKS_API_KEY = os.getenv("HOPSWORKS_API_KEY")
 HOPSWORKS_PROJECT = os.getenv("HOPSWORKS_PROJECT")
 CITY_NAME = os.getenv("CITY_NAME", "Lahore")
-CITY_COUNTRY = os.getenv("CITY_COUNTRY", "PK")
 CITY_LAT = float(os.getenv("CITY_LAT", "31.5497"))
 CITY_LON = float(os.getenv("CITY_LON", "74.3436"))
 CITY_TIMEZONE = os.getenv("CITY_TIMEZONE", "Asia/Karachi")
@@ -49,7 +57,6 @@ FEATURE_GROUP_NAME = "aqi_features"
 FEATURE_GROUP_VERSION = 1
 
 REQUIRED_ENV_VARS = (
-    "OPENWEATHER_API_KEY",
     "HOPSWORKS_API_KEY",
     "HOPSWORKS_PROJECT",
 )
@@ -75,113 +82,67 @@ def _to_float(value, default: float = 0.0) -> float:
 
 
 # ---------------------------------------------------------------------------
-# US EPA AQI CALCULATION (from raw pollutant concentrations)
-# ---------------------------------------------------------------------------
-# OpenWeather's own 'aqi' field is a coarse 1-5 category, which barely moves
-# run to run. The standard US EPA AQI (0-500 scale) is computed via linear
-# interpolation between published concentration "breakpoints" per pollutant,
-# and gives a much more sensitive, continuous value -- better for trend
-# features like aqi_change and aqi_Nh_ago.
-#
-# Breakpoints below are the standard EPA tables, in ug/m3.
-# Each tuple: (conc_low, conc_high, aqi_low, aqi_high)
-
-PM25_BREAKPOINTS = [
-    (0.0, 12.0, 0, 50),
-    (12.1, 35.4, 51, 100),
-    (35.5, 55.4, 101, 150),
-    (55.5, 150.4, 151, 200),
-    (150.5, 250.4, 201, 300),
-    (250.5, 350.4, 301, 400),
-    (350.5, 500.4, 401, 500),
-]
-
-PM10_BREAKPOINTS = [
-    (0, 54, 0, 50),
-    (55, 154, 51, 100),
-    (155, 254, 101, 150),
-    (255, 354, 151, 200),
-    (355, 424, 201, 300),
-    (425, 504, 301, 400),
-    (505, 604, 401, 500),
-]
-
-
-def _calc_sub_aqi(concentration: float, breakpoints: list) -> float:
-    """Linear interpolation of a single pollutant's AQI sub-index."""
-    if concentration is None or pd.isna(concentration) or concentration < 0:
-        return 0.0
-
-    for conc_low, conc_high, aqi_low, aqi_high in breakpoints:
-        if conc_low <= concentration <= conc_high:
-            return (
-                (aqi_high - aqi_low) / (conc_high - conc_low)
-            ) * (concentration - conc_low) + aqi_low
-
-    # Above the highest defined breakpoint -- clamp to the max AQI (500,
-    # "Hazardous") rather than erroring out on extreme pollution events.
-    return 500.0
-
-
-def calculate_us_aqi(pm25: float, pm10: float) -> float:
-    """
-    Overall AQI is the MAX of each pollutant's sub-index, per EPA methodology
-    (the worst pollutant determines the reported AQI).
-    """
-    pm25_aqi = _calc_sub_aqi(pm25, PM25_BREAKPOINTS)
-    pm10_aqi = _calc_sub_aqi(pm10, PM10_BREAKPOINTS)
-    return round(max(pm25_aqi, pm10_aqi), 1)
-
-
-# ---------------------------------------------------------------------------
-# 1. FETCH RAW DATA
+# 1. FETCH RAW DATA -- both from Open-Meteo
 # ---------------------------------------------------------------------------
 
-def fetch_openweather_pollution(lat: float, lon: float) -> dict:
+def fetch_openmeteo_pollution(lat: float, lon: float) -> dict:
     """
-    Fetch AQI + pollutant concentrations from OpenWeather's Air Pollution API.
+    Fetch current pollutant concentrations AND the ready-made US EPA AQI
+    from Open-Meteo's Air Quality API. 'us_aqi' is computed server-side by
+    Open-Meteo using the standard EPA breakpoint methodology (0-500 scale) --
+    the same thing calculate_us_aqi() used to compute manually.
     """
     resp = requests.get(
-        "https://api.openweathermap.org/data/2.5/air_pollution",
-        params={"lat": lat, "lon": lon, "appid": OPENWEATHER_API_KEY},
+        "https://air-quality-api.open-meteo.com/v1/air-quality",
+        params={
+            "latitude": lat,
+            "longitude": lon,
+            "current": "us_aqi,pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide,ozone,carbon_monoxide",
+        },
         timeout=15,
     )
     resp.raise_for_status()
     payload = resp.json()
 
-    items = payload.get("list", [])
-    if not items:
-        raise RuntimeError(f"OpenWeather Air Pollution API returned no data: {payload}")
-
-    entry = items[0]
-    components = entry.get("components", {})
+    current = payload.get("current")
+    if not current:
+        raise RuntimeError(f"Open-Meteo air quality API returned no current data: {payload}")
 
     return {
-        "pm25": components.get("pm2_5"),
-        "pm10": components.get("pm10"),
-        "no2": components.get("no2"),
-        "so2": components.get("so2"),
-        "o3": components.get("o3"),
-        "co": components.get("co"),
+        "aqi": current.get("us_aqi"),
+        "pm25": current.get("pm2_5"),
+        "pm10": current.get("pm10"),
+        "no2": current.get("nitrogen_dioxide"),
+        "so2": current.get("sulphur_dioxide"),
+        "o3": current.get("ozone"),
+        "co": current.get("carbon_monoxide"),
     }
 
 
-def fetch_openweather_weather(city: str, country: str) -> dict:
-    """Fetch current weather readings from OpenWeather."""
+def fetch_openmeteo_weather(lat: float, lon: float) -> dict:
+    """Fetch current weather readings from Open-Meteo's Forecast API."""
     resp = requests.get(
-        "https://api.openweathermap.org/data/2.5/weather",
-        params={"q": f"{city},{country}", "appid": OPENWEATHER_API_KEY, "units": "metric"},
+        "https://api.open-meteo.com/v1/forecast",
+        params={
+            "latitude": lat,
+            "longitude": lon,
+            "current": "temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,wind_speed_10m",
+        },
         timeout=15,
     )
     resp.raise_for_status()
-    data = resp.json()
+    payload = resp.json()
+
+    current = payload.get("current")
+    if not current:
+        raise RuntimeError(f"Open-Meteo forecast API returned no current data: {payload}")
 
     return {
-        "temperature": data.get("main", {}).get("temp"),
-        "feels_like": data.get("main", {}).get("feels_like"),
-        "humidity": data.get("main", {}).get("humidity"),
-        "pressure": data.get("main", {}).get("pressure"),
-        "wind_speed": data.get("wind", {}).get("speed"),
+        "temperature": current.get("temperature_2m"),
+        "feels_like": current.get("apparent_temperature"),
+        "humidity": current.get("relative_humidity_2m"),
+        "pressure": current.get("surface_pressure"),
+        "wind_speed": current.get("wind_speed_10m"),
     }
 
 
@@ -227,10 +188,15 @@ def get_recent_history(fs, hours: int = 24) -> pd.DataFrame:
         if df.empty:
             return df
 
-        df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
+        # Timestamps are stored as naive Lahore wall-clock time (see
+        # build_feature_row), so parse them naively here too -- don't treat
+        # them as UTC, or lag lookups will be off by the UTC offset.
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        if df["timestamp"].dt.tz is not None:
+            df["timestamp"] = df["timestamp"].dt.tz_localize(None)
         df = df.sort_values("timestamp")
 
-        cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(hours=hours)
+        cutoff = pd.Timestamp.now(tz=CITY_TIMEZONE).replace(tzinfo=None) - pd.Timedelta(hours=hours)
         return df[df["timestamp"] >= cutoff]
 
     except Exception as e:
@@ -256,7 +222,7 @@ def compute_lag_features(history: pd.DataFrame, current_aqi: float) -> dict:
             "aqi_change": 0.0,
         }
 
-    now = pd.Timestamp.now(tz="UTC")
+    now = pd.Timestamp.now(tz=CITY_TIMEZONE).replace(tzinfo=None)
 
     def value_closest_to(hours_ago: int, col: str, fallback: float) -> float:
         if col not in history.columns or history.empty:
@@ -312,26 +278,26 @@ def build_feature_row(fs=None) -> pd.DataFrame:
     utc_now = datetime.now(timezone.utc)
     local_now = utc_now.astimezone(ZoneInfo(CITY_TIMEZONE))
 
-    pollution_data = fetch_openweather_pollution(CITY_LAT, CITY_LON)
-    weather = fetch_openweather_weather(CITY_NAME, CITY_COUNTRY)
+    pollution_data = fetch_openmeteo_pollution(CITY_LAT, CITY_LON)
+    weather = fetch_openmeteo_weather(CITY_LAT, CITY_LON)
     time_feats = build_time_features(local_now)
 
-    # Our own continuous US EPA AQI (0-500), computed from PM2.5/PM10 -- this
-    # is what feeds aqi_change, aqi_1h_ago, etc.
-    us_aqi = calculate_us_aqi(
-        pm25=_to_float(pollution_data.get("pm25")),
-        pm10=_to_float(pollution_data.get("pm10")),
-    )
-    pollution_data["aqi"] = us_aqi
-
-    current_aqi = us_aqi
+    current_aqi = _to_float(pollution_data.get("aqi"))
 
     history = get_recent_history(fs, hours=24) if fs is not None else pd.DataFrame()
     lag_feats = compute_lag_features(history, current_aqi=current_aqi)
 
+    # Hopsworks/Hudi stores timestamps internally as UTC. If we pass a
+    # timezone-aware datetime, it gets silently converted back to UTC on
+    # write -- which is exactly the "5 hours behind" bug. To make the
+    # displayed column actually show Lahore wall-clock time, we strip the
+    # tzinfo here and store the raw Lahore local numbers as a naive
+    # datetime, so there's nothing left for Hopsworks to convert.
+    local_now_naive = local_now.replace(tzinfo=None)
+
     row = {
         "city": CITY_NAME,
-        "timestamp": utc_now,
+        "timestamp": local_now_naive,
         **pollution_data,
         **weather,
         **time_feats,
@@ -340,7 +306,7 @@ def build_feature_row(fs=None) -> pd.DataFrame:
 
     df = pd.DataFrame([row])
 
-    # day_of_week is now a string (weekday name), so it's excluded from
+    # day_of_week is a string (weekday name), so it's excluded from
     # numeric coercion below along with city/timestamp.
     numeric_cols = [c for c in df.columns if c not in ("city", "timestamp", "day_of_week")]
     for col in numeric_cols:

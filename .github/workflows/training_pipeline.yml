@@ -31,6 +31,5 @@ jobs:
           HOPSWORKS_API_KEY: ${{ secrets.HOPSWORKS_API_KEY }}
           HOPSWORKS_PROJECT: ${{ secrets.HOPSWORKS_PROJECT }}
           CITY_NAME: ${{ secrets.CITY_NAME }}
-          TEST_DAYS: ${{ secrets.TEST_DAYS }}
         run: |
           python training_pipeline/training_pipeline.py

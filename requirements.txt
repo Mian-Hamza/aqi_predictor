@@ -7,3 +7,7 @@ confluent-kafka
 scikit-learn
 xgboost
 joblib
+streamlit>=1.35
+hsml
+numpy
+plotly

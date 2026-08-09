@@ -4,3 +4,6 @@ requests
 python-dotenv
 hopsworks[python]
 confluent-kafka
+scikit-learn
+xgboost
+joblib

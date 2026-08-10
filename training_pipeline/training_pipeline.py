@@ -249,24 +249,40 @@ def pick_best(results: dict):
 # ---------------------------------------------------------------------------
 
 def register_model(project, model, model_name: str, metrics: dict, X_train: pd.DataFrame):
-    mr = project.get_model_registry()
+    from xgboost import XGBRegressor
 
+    mr = project.get_model_registry()
     tmp_dir = tempfile.mkdtemp()
-    model_path = os.path.join(tmp_dir, "model.pkl")
-    joblib.dump(model, model_path)
+
+    # XGBoost models are saved via their NATIVE format (JSON), not joblib/
+    # pickle. XGBoost's own docs warn that pickling a Booster's raw internal
+    # buffer is fragile and can become corrupted across saves/transfers --
+    # exactly the "input stream corrupted" error this caused in practice.
+    # Ridge/RandomForest (plain scikit-learn) are unaffected and still use
+    # joblib as before. A small marker file records which format was used,
+    # so predict.py / streamlit_app.py know how to load it back correctly.
+    if isinstance(model, XGBRegressor):
+        model_type = "xgboost"
+        model.save_model(os.path.join(tmp_dir, "model.json"))
+    else:
+        model_type = "sklearn"
+        joblib.dump(model, os.path.join(tmp_dir, "model.pkl"))
+
+    with open(os.path.join(tmp_dir, "model_type.txt"), "w") as f:
+        f.write(model_type)
 
     hw_metrics = {k: round(v, 4) for k, v in metrics.items()}
 
     hw_model = mr.python.create_model(
         name=model_name,
         metrics=hw_metrics,
-        description=f"AQI forecaster for {CITY_NAME}",
+        description=f"AQI forecaster for {CITY_NAME} ({model_type})",
         input_example=X_train.iloc[[0]],
     )
     hw_model.save(tmp_dir)
 
     shutil.rmtree(tmp_dir, ignore_errors=True)
-    print(f"Registered '{model_name}' (v{hw_model.version}) in Hopsworks Model Registry")
+    print(f"Registered '{model_name}' (v{hw_model.version}, {model_type} format) in Hopsworks Model Registry")
     return hw_model
 
 

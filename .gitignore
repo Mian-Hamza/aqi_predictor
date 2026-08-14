@@ -219,3 +219,27 @@ __marimo__/
 
 .env
 *.key
+
+
+# --- Frontend (Node / Vite / React) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# --- Backend (Python / FastAPI) ---
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# --- Secrets -- never commit these ---
+.env
+backend/.env
+frontend/.env
+
+# --- Editor / OS clutter ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

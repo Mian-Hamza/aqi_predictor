@@ -243,3 +243,37 @@ frontend/.env
 .idea/
 .DS_Store
 Thumbs.db
+
+
+
+# --- Frontend (Node / Vite / React) ---
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# --- Backend (Python / FastAPI) ---
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# --- Hopsworks local model-download cache ---
+# Created automatically by hw_model.download() when the backend loads a
+# registered model. Regenerated from the Model Registry on demand -- never
+# needs to be committed, and would go stale the moment you retrain anyway.
+# Wildcard pattern below covers both naming variants seen in practice:
+# "hopsworks_cache/" and the dot-prefixed hidden ".hopsworks_cache/".
+**/*hopsworks_cache*/
+.download_complete
+
+# --- Secrets -- never commit these ---
+.env
+backend/.env
+frontend/.env
+
+# --- Editor / OS clutter ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

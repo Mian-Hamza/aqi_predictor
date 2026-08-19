@@ -1,6 +1,5 @@
-fastapi
-uvicorn[standard]
-hopsworks
+fastapi[standard]
+hopsworks==4.8.4
 pandas
 requests
 python-dotenv
@@ -8,5 +7,3 @@ scikit-learn
 xgboost
 joblib
 shap
-shap
-hopsworks==4.8.4

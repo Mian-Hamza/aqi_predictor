@@ -447,14 +447,20 @@ def get_current():
     }
 
 
+TREND_HOURS = [24, 48, 72]
+
+
 @app.get("/api/trend")
-def get_trend():
+def get_trend(hours: int = 24):
     _require_env()
+    if hours not in TREND_HOURS:
+        raise HTTPException(400, f"hours must be one of {TREND_HOURS}")
+
     df = fetch_hourly_dataset()
     if df.empty:
         raise HTTPException(404, "No data available yet for this city.")
 
-    recent = df.tail(24)
+    recent = df.tail(hours)
     aqis = recent["aqi"]
 
     points = [
@@ -463,6 +469,7 @@ def get_trend():
     ]
 
     return {
+        "hours": hours,
         "points": points,
         "current": _safe_round(aqis.iloc[-1]),
         "avg": _safe_round(aqis.mean()),

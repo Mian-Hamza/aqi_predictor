@@ -5,7 +5,7 @@ import { api } from "./lib/api.js";
 import Header from "./components/Header.jsx";
 import CurrentAqiPanel from "./components/CurrentAqiPanel.jsx";
 import { Section, StatCard } from "./components/Common.jsx";
-import TrendChart from "./components/TrendChart.jsx";
+import TrendChart, { TREND_RANGES } from "./components/TrendChart.jsx";
 import { ForecastCards, PredictedTrendChart } from "./components/Forecast.jsx";
 import WhyPrediction from "./components/WhyPrediction.jsx";
 
@@ -32,11 +32,13 @@ export default function App() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [trendHours, setTrendHours] = useState(TREND_RANGES[0]); // 24
+  const [trendLoading, setTrendLoading] = useState(false);
 
   const loadAll = useCallback(async () => {
     setError(null);
     try {
-      const [currentRes, trendRes] = await Promise.all([api.current(), api.trend()]);
+      const [currentRes, trendRes] = await Promise.all([api.current(), api.trend(trendHours)]);
       setCurrent(currentRes);
       setTrend(trendRes);
 
@@ -52,6 +54,16 @@ export default function App() {
       setLoading(false);
       setRefreshing(false);
     }
+  }, [trendHours]);
+
+  const handleTrendHoursChange = useCallback((hours) => {
+    setTrendHours(hours);
+    setTrendLoading(true);
+    api
+      .trend(hours)
+      .then(setTrend)
+      .catch((err) => setError(err.message || "Failed to load trend."))
+      .finally(() => setTrendLoading(false));
   }, []);
 
   useEffect(() => {
@@ -126,8 +138,17 @@ export default function App() {
               </Section>
 
               {trend && (
-                <Section title="24-Hour AQI Trend" caption="Air quality changes over the last 24 hours">
-                  <TrendChart trend={trend} color={current.color} />
+                <Section
+                  title={`${trendHours}-Hour AQI Trend`}
+                  caption={`Air quality changes over the last ${trendHours} hours`}
+                >
+                  <TrendChart
+                    trend={trend}
+                    color={current.color}
+                    hours={trendHours}
+                    onHoursChange={handleTrendHoursChange}
+                    loading={trendLoading}
+                  />
                 </Section>
               )}
 

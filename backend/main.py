@@ -43,8 +43,8 @@ app = FastAPI(title="AQI Predictor API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[FRONTEND_ORIGIN, "http://127.0.0.1:5173"],
-    allow_methods=["GET"],
+    allow_origins=[FRONTEND_ORIGIN, "https://aqi-predictor-green.vercel.app","http://127.0.0.1:5173"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 

@@ -4,5 +4,17 @@ version = "1.0.0"
 description = "AQI prediction FastAPI backend"
 requires-python = "==3.12.*"
 
+dependencies = [
+    "fastapi[standard]",
+    "hopsworks==4.8.4",
+    "pandas",
+    "requests",
+    "python-dotenv",
+    "scikit-learn",
+    "xgboost",
+    "joblib",
+    "shap",
+]
+
 [tool.fastapi]
 entrypoint = "main:app"

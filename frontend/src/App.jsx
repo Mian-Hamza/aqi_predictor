@@ -191,7 +191,7 @@ export default function App() {
               )}
 
               <p className="text-center text-xs text-muted mt-10">
-               Pearls AQI Predictor · Air-quality intelligence for {cityName}
+               Air-quality monitoring for {cityName}
               </p>
             </motion.div>
           )}

@@ -31,7 +31,7 @@ export default function Header({ city, color, updatedAt, onRefresh, refreshing }
           <h1 className="font-display text-base sm:text-lg font-bold text-ink leading-tight truncate">
            Pearls AQI Predictor
           </h1>
-          <p className="text-xs text-muted truncate">AI-powered air quality intelligence</p>
+          <p className="text-xs text-muted truncate">Advanced air quality monitoring</p>
         </div>
       </div>
 

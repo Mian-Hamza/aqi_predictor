@@ -11,6 +11,8 @@ dependencies = [
     "requests",
     "python-dotenv",
     "scikit-learn",
+    "hopsworks[python]",
+    "pyarrow",
     "xgboost",
     "joblib",
     "shap",

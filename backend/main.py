@@ -72,7 +72,11 @@ def get_connection():
     if _connection_cache["fs"] is None or (now - _connection_cache["ts"]) > CONNECTION_TTL:
         import hopsworks
 
-        project = hopsworks.login(project=HOPSWORKS_PROJECT, api_key_value=HOPSWORKS_API_KEY)
+        project = hopsworks.login(
+    project=HOPSWORKS_PROJECT,
+    api_key_value=HOPSWORKS_API_KEY,
+    engine="python"
+)
         _connection_cache.update({
             "project": project,
             "fs": project.get_feature_store(),

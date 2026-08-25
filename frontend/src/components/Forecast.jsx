@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Dot } from "recharts";
 import { Card, Badge } from "./Common.jsx";
+import { useTheme } from "../lib/ThemeContext.jsx";
 
 export function ForecastCards({ forecast }) {
   return (
@@ -40,9 +41,6 @@ function ActiveDot(props) {
   return <Dot cx={cx} cy={cy} r={5} fill={payload.color} stroke="#fff" strokeWidth={2} />;
 }
 
-// Same fix as TrendChart.jsx: build explicit, evenly-spaced ticks (step of
-// 50) from the real data range instead of letting Recharts guess a domain
-// via a function, which was producing uneven gaps like 65 / 65 / 120.
 function buildYAxisTicks(data) {
   const maxAqi = data.length ? Math.max(...data.map((d) => d.aqi)) : 0;
   const bufferedMax = maxAqi + 20;
@@ -54,17 +52,13 @@ function buildYAxisTicks(data) {
   return { ticks, niceMax };
 }
 
-// Custom tooltip: reads `color` straight off the hovered point's own data
-// (the same severity color used for that point's dot), so the AQI value
-// always renders in that point's color -- not the overall trend line's
-// green/red "improving/worsening" color, which is a different concept.
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const point = payload[0].payload; // { label, aqi, color }
   return (
     <div
-      className="bg-white px-3.5 py-2.5 shadow-lg text-xs"
-      style={{ borderRadius: 12, border: "1px solid #E6EAF1" }}
+      className="bg-white dark:bg-surface px-3.5 py-2.5 shadow-lg text-xs"
+      style={{ borderRadius: 12, border: "1px solid rgb(var(--color-border))" }}
     >
       <p className="text-muted mb-1">{point.label}</p>
       <p className="font-semibold text-sm" style={{ color: point.color }}>
@@ -75,11 +69,16 @@ function CustomTooltip({ active, payload }) {
 }
 
 export function PredictedTrendChart({ forecast }) {
+  const { isDark } = useTheme();
+  const gridStroke = isDark ? "#1F2937" : "#EEF1F5";
+  const tickColor = isDark ? "#94A3B8" : "#667085";
+  const cursorStroke = isDark ? "#26303F" : "#E6EAF1";
+
   const improving = forecast.trend_direction === "improving";
   const lineColor = improving ? "#22C55E" : "#EF4444";
 
   const data = [
-    { label: "Today", aqi: forecast.current_aqi, color: "#101828" },
+    { label: "Today", aqi: forecast.current_aqi, color: isDark ? "#F1F5F9" : "#101828" },
     ...forecast.forecast.map((h) => ({ label: `+${h.horizon}d`, aqi: h.prediction, color: h.color })),
   ];
 
@@ -96,16 +95,16 @@ export function PredictedTrendChart({ forecast }) {
       <Card>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={data} margin={{ top: 10, right: 10, left: 6, bottom: 0 }}>
-            <CartesianGrid vertical={false} stroke="#EEF1F5" />
+            <CartesianGrid vertical={false} stroke={gridStroke} />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 12, fill: "#667085" }}
+              tick={{ fontSize: 12, fill: tickColor }}
               axisLine={false}
               tickLine={false}
               padding={{ left: 12, right: 12 }}
             />
             <YAxis
-              tick={{ fontSize: 11, fill: "#667085" }}
+              tick={{ fontSize: 11, fill: tickColor }}
               axisLine={false}
               tickLine={false}
               width={44}
@@ -113,7 +112,7 @@ export function PredictedTrendChart({ forecast }) {
               ticks={yTicks}
               allowDecimals={false}
             />
-            <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#E6EAF1" }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ stroke: cursorStroke }} />
             <Line
               type="monotone"
               dataKey="aqi"

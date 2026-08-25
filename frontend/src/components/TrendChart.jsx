@@ -2,6 +2,7 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { Radio, BarChart3, ArrowDown, ArrowUp } from "lucide-react";
 import { Card, StatCard } from "./Common.jsx";
 import { aqiColor, AQI_BANDS } from "../lib/aqiColor.js";
+import { useTheme } from "../lib/ThemeContext.jsx";
 
 export const TREND_RANGES = [24, 48, 72];
 
@@ -74,7 +75,7 @@ function CustomTooltip({ active, payload }) {
   const color = aqiColor(point.aqi);
 
   return (
-    <div className="bg-white border border-border rounded-lg px-3 py-2 shadow-lg">
+    <div className="bg-white dark:bg-surface border border-border rounded-lg px-3 py-2 shadow-lg">
       <p className="text-xs text-muted mb-0.5">{formatFull(point.timestamp)}</p>
       <p className="font-semibold text-sm" style={{ color }}>
         AQI {point.aqi}
@@ -96,7 +97,7 @@ function RangeSelector({ value, onChange, disabled }) {
             onClick={() => onChange(hours)}
             aria-pressed={active}
             className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
-              active ? "bg-white text-ink shadow-sm" : "text-muted hover:text-ink"
+              active ? "bg-white dark:bg-surface text-ink shadow-sm" : "text-muted hover:text-ink"
             } ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             {hours}H
@@ -121,6 +122,11 @@ function Legend() {
 }
 
 export default function TrendChart({ trend, hours = 24, onHoursChange, loading = false }) {
+  const { isDark } = useTheme();
+  const gridStroke = isDark ? "#1F2937" : "#EEF1F5";
+  const tickColor = isDark ? "#94A3B8" : "#667085";
+  const cursorStroke = isDark ? "#26303F" : "#E6EAF1";
+
   const longRange = hours > 24;
   const data = trend.points.map((p) => ({ ...p, hourLabel: formatTick(p.timestamp, longRange) }));
   const { ticks: yTicks, niceMax } = buildYAxis(data);
@@ -179,11 +185,11 @@ export default function TrendChart({ trend, hours = 24, onHoursChange, loading =
                 </linearGradient>
               </defs>
 
-              <CartesianGrid vertical={false} stroke="#EEF1F5" />
+              <CartesianGrid vertical={false} stroke={gridStroke} />
               <XAxis
                 dataKey="hourLabel"
                 height={X_AXIS_HEIGHT}
-                tick={{ fontSize: 11, fill: "#667085" }}
+                tick={{ fontSize: 11, fill: tickColor }}
                 interval={Math.max(0, Math.ceil(data.length / 6) - 1)}
                 axisLine={false}
                 tickLine={false}
@@ -191,7 +197,7 @@ export default function TrendChart({ trend, hours = 24, onHoursChange, loading =
                 minTickGap={12}
               />
               <YAxis
-                tick={{ fontSize: 11, fill: "#667085" }}
+                tick={{ fontSize: 11, fill: tickColor }}
                 axisLine={false}
                 tickLine={false}
                 width={44}
@@ -199,7 +205,7 @@ export default function TrendChart({ trend, hours = 24, onHoursChange, loading =
                 ticks={yTicks}
                 allowDecimals={false}
               />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#E6EAF1" }} />
+              <Tooltip content={<CustomTooltip />} cursor={{ stroke: cursorStroke }} />
 
               <Area
                 type="monotone"
@@ -209,7 +215,7 @@ export default function TrendChart({ trend, hours = 24, onHoursChange, loading =
                 fill={`url(#${fillId})`}
                 fillOpacity={1}
                 dot={false}
-                activeDot={{ r: 4, strokeWidth: 2, stroke: "#fff" }}
+                activeDot={{ r: 4, strokeWidth: 2, stroke: isDark ? "#131826" : "#fff" }}
                 animationDuration={600}
                 isAnimationActive={true}
               />

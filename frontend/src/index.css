@@ -4,11 +4,42 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Color tokens as CSS variables (RGB triplets, no rgb() wrapper) so
+  Tailwind's `rgb(var(--x) / <alpha-value>)` pattern in tailwind.config.js
+  can apply opacity modifiers (e.g. bg-surface/50) on top of them.
+
+  :root = light mode values (inferred from the hex codes already hardcoded
+  across your components -- adjust these if they don't match your real
+  design exactly).
+  .dark = dark mode overrides, applied when ThemeContext adds the `dark`
+  class to <html>.
+*/
+:root {
+  --color-canvas: 246 248 251; /* #F6F8FB */
+  --color-surface: 255 255 255; /* #FFFFFF */
+  --color-ink: 16 24 40; /* #101828 */
+  --color-muted: 102 112 133; /* #667085 */
+  --color-border: 230 234 241; /* #E6EAF1 */
+  --color-accent: 14 165 233; /* #0EA5E9 */
+}
+
+.dark {
+  --color-canvas: 10 14 20; /* #0A0E14 */
+  --color-surface: 19 24 35; /* #131826 */
+  --color-ink: 241 245 249; /* #F1F5F9 */
+  --color-muted: 148 163 184; /* #94A3B8 */
+  --color-border: 38 48 63; /* #26303F */
+  --color-accent: 56 189 248; /* #38BDF8 -- lightened sky blue for dark-bg contrast */
+}
+
 html,
 body {
   font-family: "Inter", sans-serif;
-  color: #101828;
+  color: rgb(var(--color-ink));
+  background-color: rgb(var(--color-canvas));
   -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 * {

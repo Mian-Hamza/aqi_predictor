@@ -106,11 +106,11 @@ export default function App() {
               key="error"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="bg-red-50 border border-red-200 text-red-700 rounded-card p-6 text-sm"
+              className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 rounded-card p-6 text-sm"
             >
               <p className="font-semibold mb-1">Couldn't load data</p>
               <p>{error}</p>
-              <p className="text-xs text-red-500 mt-2">
+              <p className="text-xs text-red-500 dark:text-red-400/80 mt-2">
                 Make sure the backend is running at the configured API URL.
               </p>
             </motion.div>

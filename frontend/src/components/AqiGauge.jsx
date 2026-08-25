@@ -1,8 +1,8 @@
 import { motion, useSpring, useTransform } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useTheme } from "../lib/ThemeContext.jsx";
 
 const MAX_AQI = 300;
-const TRACK_COLOR = "#EEF1F5"; // neutral gray -- no category tint
 
 const SIZE = 220;
 const STROKE = 20;
@@ -33,6 +33,11 @@ function valueToAngle(value) {
 }
 
 export default function AqiGauge({ value, color }) {
+  const { isDark } = useTheme();
+  const trackColor = isDark ? "#26303F" : "#EEF1F5";
+  const valueTextColor = isDark ? "#F1F5F9" : "#101828";
+  const labelTextColor = isDark ? "#94A3B8" : "#667085";
+
   const spring = useSpring(0, { stiffness: 60, damping: 16 });
   const [display, setDisplay] = useState(0);
 
@@ -52,7 +57,7 @@ export default function AqiGauge({ value, color }) {
       <svg width={SIZE} height={SIZE * 0.72} viewBox={`0 0 ${SIZE} ${SIZE * 0.78}`}>
         <path
           d={arcPath(START_ANGLE, END_ANGLE)}
-          stroke={TRACK_COLOR}
+          stroke={trackColor}
           strokeWidth={STROKE}
           fill="none"
           strokeLinecap="round"
@@ -69,7 +74,7 @@ export default function AqiGauge({ value, color }) {
           y={CENTER - 6}
           textAnchor="middle"
           className="font-display"
-          style={{ fontSize: 40, fontWeight: 700, fill: "#101828" }}
+          style={{ fontSize: 40, fontWeight: 700, fill: valueTextColor }}
         >
           {Math.round(display)}
         </text>
@@ -77,7 +82,7 @@ export default function AqiGauge({ value, color }) {
           x={CENTER}
           y={CENTER + 18}
           textAnchor="middle"
-          style={{ fontSize: 12, fill: "#667085", letterSpacing: "0.05em" }}
+          style={{ fontSize: 12, fill: labelTextColor, letterSpacing: "0.05em" }}
         >
           AQI
         </text>

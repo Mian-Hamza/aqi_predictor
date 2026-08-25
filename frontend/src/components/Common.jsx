@@ -21,36 +21,60 @@ export function Card({ children, className = "" }) {
   );
 }
 
-export function StatCard({ icon: Icon, label, value, unit, index = 0, valueColor }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, duration: 0.35 }}
-      whileHover={{ y: -3 }}
-    >
-      <Card>
-        <div
-          className="w-9 h-9 rounded-full flex items-center justify-center mb-3"
-          style={{
-            backgroundColor: valueColor ? `${valueColor}1A` : undefined,
-            color: valueColor || undefined,
-          }}
-        >
-          <Icon size={18} strokeWidth={2.25} className={valueColor ? undefined : "text-accent"} />
-        </div>
-        <div
-          className="font-display text-2xl font-bold tabular-nums"
-          style={{ color: valueColor || "#101828" }}
-        >
-          {value ?? "—"}
-          {unit && <span className="text-sm font-medium text-muted ml-1">{unit}</span>}
-        </div>
-        <div className="text-sm text-muted mt-1">{label}</div>
-      </Card>
-    </motion.div>
-  );
-}
+export function StatCard({
+    icon: Icon,
+    label,
+    value,
+    unit,
+    index = 0,
+    valueColor,
+  }) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.05, duration: 0.35 }}
+        whileHover={{ y: -3 }}
+      >
+        <Card>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center mb-3"
+            style={{
+              backgroundColor: valueColor
+                ? `${valueColor}1A`
+                : undefined,
+              color: valueColor || undefined,
+            }}
+          >
+            <Icon
+              size={18}
+              strokeWidth={2.25}
+              className={valueColor ? undefined : "text-accent"}
+            />
+          </div>
+  
+          <div
+            className={`font-display text-2xl font-bold tabular-nums ${
+              valueColor ? "" : "text-ink dark:text-white"
+            }`}
+            style={valueColor ? { color: valueColor } : undefined}
+          >
+            {value ?? "—"}
+  
+            {unit && (
+              <span className="text-sm font-medium text-muted ml-1">
+                {unit}
+              </span>
+            )}
+          </div>
+  
+          <div className="text-sm text-muted mt-1">
+            {label}
+          </div>
+        </Card>
+      </motion.div>
+    );
+  }
 
 export function Badge({ label, color }) {
   return (

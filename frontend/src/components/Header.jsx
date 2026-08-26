@@ -25,7 +25,7 @@ export default function Header({ city, color, updatedAt, onRefresh, refreshing }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-4 z-50 rounded-card border py-3 px-4 sm:px-6 mb-8 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md shadow-sm"
+      className="sticky top-4 z-50 rounded-card border py-3 px-4 sm:px-6 mb-8 flex flex-nowrap items-center justify-between gap-3 backdrop-blur-md shadow-sm"
       style={{
         background,
         borderColor: color ? `${color}33` : "rgb(var(--color-border))",
@@ -43,48 +43,69 @@ export default function Header({ city, color, updatedAt, onRefresh, refreshing }
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {city && (
-          <span className="hidden sm:flex items-center gap-1.5 bg-white/70 dark:bg-surface/70 border border-border rounded-full px-3 py-1.5 text-xs font-medium text-ink">
-            <MapPin size={12} className="text-muted shrink-0" />
-            {city}
-          </span>
-        )}
+      <div className="flex items-center gap-3 shrink-0">
+  {city && (
+    <span className="hidden sm:flex items-center gap-1.5 bg-white/70 dark:bg-surface/70 border border-border rounded-full px-3 py-1.5 text-xs font-medium text-ink">
+      <MapPin size={12} className="text-muted shrink-0" />
+      {city}
+    </span>
+  )}
 
-        {time && (
-          <span className="hidden md:inline text-xs text-muted whitespace-nowrap">
-            Updated {time}
-          </span>
-        )}
+  {time && (
+    <span className="hidden md:inline text-xs text-muted whitespace-nowrap">
+      Updated {time}
+    </span>
+  )}
 
-        <motion.button
-          onClick={toggleTheme}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          className="flex items-center justify-center bg-white dark:bg-surface border border-border rounded-full w-8 h-8 text-ink shadow-sm hover:shadow-md hover:border-accent/40 transition-all shrink-0"
-        >
-          {isDark ? <Sun size={14} strokeWidth={2.25} /> : <Moon size={14} strokeWidth={2.25} />}
-        </motion.button>
+  {/* Theme + Refresh buttons */}
+  <div className="flex items-center gap-3 shrink-0">
+    
+    <motion.button
+      onClick={toggleTheme}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="flex items-center justify-center bg-white dark:bg-surface border border-border rounded-full w-10 h-10 text-ink shadow-sm hover:shadow-md hover:border-accent/40 transition-all shrink-0"
+    >
+      {isDark ? (
+        <Sun size={18} strokeWidth={2.25} />
+      ) : (
+        <Moon size={18} strokeWidth={2.25} />
+      )}
+    </motion.button>
 
-        <motion.button
-          onClick={onRefresh}
-          disabled={refreshing}
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
-          className="flex items-center gap-1.5 bg-white dark:bg-surface border border-border rounded-full px-3 py-1.5 text-xs sm:text-sm font-medium text-ink shadow-sm hover:shadow-md hover:border-accent/40 transition-all disabled:opacity-50 shrink-0"
-        >
-          <motion.span
-            className="flex text-accent"
-            animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
-            transition={refreshing ? { repeat: Infinity, duration: 0.8, ease: "linear" } : {}}
-          >
-            <RefreshCw size={14} strokeWidth={2.25} />
-          </motion.span>
-          <span className="hidden sm:inline">Refresh</span>
-        </motion.button>
-      </div>
+    {/* Divider */}
+    <div className="h-7 w-px bg-border shrink-0" />
+
+    <motion.button
+      onClick={onRefresh}
+      disabled={refreshing}
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      aria-label="Refresh data"
+      title="Refresh data"
+      className="flex items-center justify-center bg-white dark:bg-surface border border-border rounded-full w-10 h-10 text-ink shadow-sm hover:shadow-md hover:border-accent/40 transition-all disabled:opacity-50 shrink-0"
+    >
+      <motion.span
+        className="flex text-accent"
+        animate={refreshing ? { rotate: 360 } : { rotate: 0 }}
+        transition={
+          refreshing
+            ? {
+                repeat: Infinity,
+                duration: 0.8,
+                ease: "linear",
+              }
+            : {}
+        }
+      >
+        <RefreshCw size={18} strokeWidth={2.25} />
+      </motion.span>
+    </motion.button>
+
+  </div>
+</div>
     </motion.div>
   );
 }

@@ -25,7 +25,7 @@ export default function Header({ city, color, updatedAt, onRefresh, refreshing }
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
-      className="sticky top-4 z-50 rounded-card border py-3 px-4 sm:px-6 mb-8 flex items-center justify-between gap-3 backdrop-blur-md shadow-sm"
+      className="sticky top-4 z-50 rounded-card border py-3 px-4 sm:px-6 mb-8 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md shadow-sm"
       style={{
         background,
         borderColor: color ? `${color}33` : "rgb(var(--color-border))",
@@ -82,7 +82,7 @@ export default function Header({ city, color, updatedAt, onRefresh, refreshing }
           >
             <RefreshCw size={14} strokeWidth={2.25} />
           </motion.span>
-          Refresh
+          <span className="hidden sm:inline">Refresh</span>
         </motion.button>
       </div>
     </motion.div>

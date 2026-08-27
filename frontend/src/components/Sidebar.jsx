@@ -348,30 +348,34 @@ export default function Sidebar() {
 
 <motion.button
   onClick={() => setMobileOpen(true)}
-  whileTap={{ scale: 0.95 }}
+  whileTap={{ scale: 0.92 }}
+  whileHover={{ scale: 1.03 }}
   className="
     lg:hidden
     fixed
-    top-4
+    top-[calc(50px+env(safe-area-inset-top))]
     left-4
     z-[100]
-    w-11
-    h-11
-    rounded-lg
-    bg-surface
+    w-10
+    h-10
+    rounded-xl
+    bg-surface/95
+    backdrop-blur-sm
     border
     border-border
     text-ink
-    shadow-card
+    shadow-md
     flex
     items-center
     justify-center
+    transition-all
+    duration-200
   "
   aria-label="Open section navigation"
 >
   <Menu
-    size={21}
-    strokeWidth={2.25}
+    size={22}
+    strokeWidth={2.5}
   />
 </motion.button>
 

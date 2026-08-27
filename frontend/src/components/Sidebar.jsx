@@ -72,44 +72,82 @@ function scrollToSection(id) {
  */
 function NavList({ activeId, onNavigate }) {
   return (
-    <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-        const active = activeId === id;
+    <nav
+  className="
+    flex
+    flex-col
+    gap-2
+    pt-5
+    px-2
+  "
+>
+  {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+    const active = activeId === id;
 
-        return (
-          <button
-            key={id}
-            onClick={() => {
-              scrollToSection(id);
-              onNavigate?.();
-            }}
-            className={`
-              flex items-center gap-3
-              w-full
-              px-3 py-3
-              rounded-xl
-              text-sm
-              font-medium
-              text-left
-              transition-colors
-              ${
-                active
-                  ? "bg-accent/10 text-accent"
-                  : "text-muted hover:text-ink hover:bg-canvas"
-              }
-            `}
-          >
-            <Icon
-              size={18}
-              strokeWidth={2.25}
-              className="shrink-0"
-            />
+    return (
+      <button
+        key={id}
+        onClick={() => {
+          // Immediately move the blue active state
+          // to the option that was clicked
+          setActiveId(id);
 
-            <span>{label}</span>
-          </button>
-        );
-      })}
-    </nav>
+          // Then scroll to that section
+          scrollToSection(id);
+        }}
+        title={label}
+        className={`
+          relative
+          flex
+          items-center
+          h-[48px]
+          w-full
+          rounded-lg
+          text-sm
+          font-medium
+          whitespace-nowrap
+          transition-all
+          duration-200
+          ${
+            active
+              ? "bg-accent/10 text-accent"
+              : "text-muted hover:text-ink hover:bg-canvas"
+          }
+        `}
+      >
+        {/* Icon */}
+        <span
+          className="
+            w-[58px]
+            min-w-[58px]
+            flex
+            items-center
+            justify-center
+          "
+        >
+          <Icon
+            size={21}
+            strokeWidth={2.1}
+            className="shrink-0"
+          />
+        </span>
+
+        {/* Label */}
+        <span
+          className="
+            opacity-0
+            group-hover:opacity-100
+            transition-opacity
+            duration-150
+            ml-1
+          "
+        >
+          {label}
+        </span>
+      </button>
+    );
+  })}
+</nav>
   );
 }
 

@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
 
-export function Section({ title, caption, children, className = "" }) {
+export function Section({ id, title, caption, children, className = "" }) {
   return (
-    <section className={`mb-8 ${className}`}>
+    <section id={id} className={`mb-8 scroll-mt-28 ${className}`}>
       <h2 className="font-display text-xl font-semibold text-ink">{title}</h2>
       {caption && <p className="text-sm text-muted mb-4">{caption}</p>}
       {!caption && <div className="mb-4" />}
@@ -21,60 +21,41 @@ export function Card({ children, className = "" }) {
   );
 }
 
-export function StatCard({
-    icon: Icon,
-    label,
-    value,
-    unit,
-    index = 0,
-    valueColor,
-  }) {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.05, duration: 0.35 }}
-        whileHover={{ y: -3 }}
-      >
-        <Card>
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center mb-3"
-            style={{
-              backgroundColor: valueColor
-                ? `${valueColor}1A`
-                : undefined,
-              color: valueColor || undefined,
-            }}
-          >
-            <Icon
-              size={18}
-              strokeWidth={2.25}
-              className={valueColor ? undefined : "text-accent"}
-            />
-          </div>
-  
-          <div
-            className={`font-display text-2xl font-bold tabular-nums ${
-              valueColor ? "" : "text-ink dark:text-white"
-            }`}
-            style={valueColor ? { color: valueColor } : undefined}
-          >
-            {value ?? "—"}
-  
-            {unit && (
-              <span className="text-sm font-medium text-muted ml-1">
-                {unit}
-              </span>
-            )}
-          </div>
-  
-          <div className="text-sm text-muted mt-1">
-            {label}
-          </div>
-        </Card>
-      </motion.div>
-    );
-  }
+export function StatCard({ icon: Icon, label, value, unit, index = 0, valueColor }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05, duration: 0.35 }}
+      whileHover={{ y: -3 }}
+    >
+      <Card>
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center mb-3"
+          style={{
+            backgroundColor: valueColor ? `${valueColor}1A` : undefined,
+            color: valueColor || undefined,
+          }}
+        >
+          <Icon size={18} strokeWidth={2.25} className={valueColor ? undefined : "text-accent"} />
+        </div>
+        <div
+          className="font-display text-2xl font-bold tabular-nums"
+          // Was hardcoded to "#101828" (light-mode ink), which is invisible
+          // dark-navy-on-dark-background once .dark is active. Referencing
+          // the CSS variable directly means the browser re-resolves it
+          // live whenever the `dark` class toggles -- no theme check
+          // needed here at all.
+          style={{ color: valueColor || "rgb(var(--color-ink))" }}
+        >
+          {value ?? "—"}
+          {unit && <span className="text-sm font-medium text-muted ml-1">{unit}</span>}
+        </div>
+        <div className="text-sm text-muted mt-1">{label}</div>
+      </Card>
+    </motion.div>
+  );
+}
 
 export function Badge({ label, color }) {
   return (

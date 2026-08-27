@@ -5,6 +5,7 @@ import { api } from "./lib/api.js";
 import Header from "./components/Header.jsx";
 import CurrentAqiPanel from "./components/CurrentAqiPanel.jsx";
 import { Section, StatCard } from "./components/Common.jsx";
+import Sidebar from "./components/Sidebar.jsx";
 import TrendChart, { TREND_RANGES } from "./components/TrendChart.jsx";
 import { ForecastCards, PredictedTrendChart } from "./components/Forecast.jsx";
 import WhyPrediction from "./components/WhyPrediction.jsx";
@@ -88,6 +89,8 @@ export default function App() {
           refreshing={refreshing}
         />
 
+        <Sidebar />
+
         <AnimatePresence mode="wait">
           {loading && (
             <motion.div
@@ -122,7 +125,7 @@ export default function App() {
                 <CurrentAqiPanel current={current} />
               </Section>
 
-              <Section title="Current Pollutants" caption={`Live pollutant concentrations at ${cityName}`}>
+              <Section id="pollutants" title="Current Pollutants" caption={`Live pollutant concentrations at ${cityName}`}>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                   {POLLUTANT_META.map((p, i) => (
                     <StatCard
@@ -139,6 +142,7 @@ export default function App() {
 
               {trend && (
                 <Section
+                  id="trend"
                   title={`${trendHours}-Hour AQI Trend`}
                   caption={`Air quality changes over the last ${trendHours} hours`}
                 >
@@ -152,7 +156,7 @@ export default function App() {
                 </Section>
               )}
 
-              <Section title="Current Conditions" caption="Weather variables at time of measurement">
+              <Section id="conditions" title="Current Conditions" caption="Weather variables at time of measurement">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                   {CONDITION_META.map((c, i) => (
                     <StatCard
@@ -173,16 +177,16 @@ export default function App() {
                     <ForecastCards forecast={forecast} />
                   </Section>
 
-                  <Section title="Predicted AQI Trend" caption="Today through 72-hour AI forecast">
+                  <Section id="prediction" title="Predicted AQI Trend" caption="Today through 72-hour AI forecast">
                     <PredictedTrendChart forecast={forecast} />
                   </Section>
 
-                  <Section title="">
+                  <Section id="shap" title="">
                     <WhyPrediction />
                   </Section>
                 </>
               ) : (
-                <Section title="AI Air Quality Forecast">
+                <Section id="prediction" title="AI Air Quality Forecast">
                   <div className="bg-surface border border-border rounded-card p-6 text-sm text-muted">
                     Not enough historical data yet to generate a forecast, or no trained models are
                     registered yet.

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LineChart,
@@ -18,154 +18,181 @@ const NAV_ITEMS = [
   { id: "shap", label: "SHAP Analysis", icon: Brain },
 ];
 
-/*
- * Tracks which section is currently visible.
- */
-function useActiveSection(ids) {
-  const [activeId, setActiveId] = useState(ids[0]);
+/* =========================================================
+   FIND WHICH SECTION IS CURRENTLY AT THE TOP OF THE PAGE
+   ========================================================= */
+
+function getActiveSection() {
+  const headerOffset = 120;
+  let currentSection = NAV_ITEMS[0].id;
+
+  for (const item of NAV_ITEMS) {
+    const section = document.getElementById(item.id);
+
+    if (!section) continue;
+
+    const rect = section.getBoundingClientRect();
+
+    if (rect.top <= headerOffset) {
+      currentSection = item.id;
+    }
+  }
+
+  return currentSection;
+}
+
+/* =========================================================
+   SCROLL TRACKING
+   ========================================================= */
+
+function useActiveSection() {
+  const [activeId, setActiveId] = useState(NAV_ITEMS[0].id);
+
+  // Prevent scroll tracking from overriding the item
+  // immediately after the user clicks it.
+  const navigationLock = useRef(false);
 
   useEffect(() => {
-    const elements = ids
-      .map((id) => document.getElementById(id))
-      .filter(Boolean);
-
-    if (!elements.length) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort(
-            (a, b) =>
-              a.boundingClientRect.top - b.boundingClientRect.top
-          );
-
-        if (visible.length > 0) {
-          setActiveId(visible[0].target.id);
-        }
-      },
-      {
-        rootMargin: "-100px 0px -70% 0px",
-        threshold: 0,
+    const handleScroll = () => {
+      // If the user has just clicked a navigation item,
+      // don't let the scroll event change the active item
+      // while smooth scrolling is happening.
+      if (navigationLock.current) {
+        return;
       }
-    );
 
-    elements.forEach((el) => observer.observe(el));
+      const current = getActiveSection();
 
-    return () => observer.disconnect();
-  }, [ids]);
+      setActiveId((previous) => {
+        if (previous === current) {
+          return previous;
+        }
 
-  return activeId;
-}
+        return current;
+      });
+    };
 
-function scrollToSection(id) {
-  document
-    .getElementById(id)
-    ?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
     });
+
+    // Set initial active section
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  /*
+   * Called when a navigation item is clicked.
+   *
+   * It immediately changes the blue highlight and then
+   * locks the active state during smooth scrolling.
+   */
+  const navigateTo = (id) => {
+    setActiveId(id);
+
+    navigationLock.current = true;
+
+    const element = document.getElementById(id);
+
+    if (element) {
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
+
+    /*
+     * Wait until smooth scrolling has finished.
+     * Then unlock normal scroll-based active detection.
+     */
+    setTimeout(() => {
+      navigationLock.current = false;
+
+      // Make absolutely sure the final section is correct.
+      const finalSection = getActiveSection();
+
+      setActiveId(finalSection);
+    }, 800);
+  };
+
+  return {
+    activeId,
+    navigateTo,
+  };
 }
 
-/*
- * Mobile navigation
- */
+/* =========================================================
+   MOBILE NAVIGATION
+   ========================================================= */
+
 function NavList({ activeId, onNavigate }) {
   return (
-    <nav
-  className="
-    flex
-    flex-col
-    gap-2
-    pt-5
-    px-2
-  "
->
-  {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-    const active = activeId === id;
+    <nav className="flex flex-col gap-1">
+      {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+        const active = activeId === id;
 
-    return (
-      <button
-        key={id}
-        onClick={() => {
-          // Immediately move the blue active state
-          // to the option that was clicked
-          setActiveId(id);
+        return (
+          <button
+            key={id}
+            onClick={() => {
+              onNavigate(id);
+            }}
+            className={`
+              flex
+              items-center
+              gap-3
+              w-full
+              px-3
+              py-3
+              rounded-xl
+              text-sm
+              font-medium
+              text-left
+              transition-all
+              duration-200
+              ${
+                active
+                  ? "bg-accent/10 text-accent"
+                  : "text-muted hover:text-ink hover:bg-canvas"
+              }
+            `}
+          >
+            <Icon
+              size={18}
+              strokeWidth={2.25}
+              className="shrink-0"
+            />
 
-          // Then scroll to that section
-          scrollToSection(id);
-        }}
-        title={label}
-        className={`
-          relative
-          flex
-          items-center
-          h-[48px]
-          w-full
-          rounded-lg
-          text-sm
-          font-medium
-          whitespace-nowrap
-          transition-all
-          duration-200
-          ${
-            active
-              ? "bg-accent/10 text-accent"
-              : "text-muted hover:text-ink hover:bg-canvas"
-          }
-        `}
-      >
-        {/* Icon */}
-        <span
-          className="
-            w-[58px]
-            min-w-[58px]
-            flex
-            items-center
-            justify-center
-          "
-        >
-          <Icon
-            size={21}
-            strokeWidth={2.1}
-            className="shrink-0"
-          />
-        </span>
-
-        {/* Label */}
-        <span
-          className="
-            opacity-0
-            group-hover:opacity-100
-            transition-opacity
-            duration-150
-            ml-1
-          "
-        >
-          {label}
-        </span>
-      </button>
-    );
-  })}
-</nav>
+            <span>{label}</span>
+          </button>
+        );
+      })}
+    </nav>
   );
 }
 
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
 export default function Sidebar() {
-  const ids = NAV_ITEMS.map((item) => item.id);
-  const activeId = useActiveSection(ids);
+  const { activeId, navigateTo } = useActiveSection();
 
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <>
-      {/* =========================================================
+      {/* =====================================================
           DESKTOP SIDEBAR
-          ========================================================= */}
+          ===================================================== */}
 
       <aside
         className="
-          hidden lg:flex
+          hidden
+          lg:flex
           fixed
           left-0
           top-0
@@ -184,9 +211,9 @@ export default function Sidebar() {
           ease-out
         "
       >
-        {/* ---------------------------------------------------------
-            TOP AREA
-            --------------------------------------------------------- */}
+        {/* =================================================
+            SIDEBAR HEADER
+            ================================================= */}
 
         <div
           className="
@@ -198,7 +225,7 @@ export default function Sidebar() {
             border-border
           "
         >
-          {/* Menu / Close icon */}
+          {/* Menu icon */}
 
           <div
             className="
@@ -217,12 +244,12 @@ export default function Sidebar() {
             />
           </div>
 
-          {/* Title - appears only when expanded */}
+          {/* Sections text */}
 
           <div
             className="
               absolute
-              left-[74px]
+              left-[108px]
               flex
               items-center
               whitespace-nowrap
@@ -238,9 +265,9 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* ---------------------------------------------------------
-            NAVIGATION
-            --------------------------------------------------------- */}
+        {/* =================================================
+            DESKTOP NAVIGATION
+            ================================================= */}
 
         <nav
           className="
@@ -257,7 +284,7 @@ export default function Sidebar() {
             return (
               <button
                 key={id}
-                onClick={() => scrollToSection(id)}
+                onClick={() => navigateTo(id)}
                 title={label}
                 className={`
                   relative
@@ -269,7 +296,8 @@ export default function Sidebar() {
                   text-sm
                   font-medium
                   whitespace-nowrap
-                  transition-colors
+                  transition-all
+                  duration-200
                   ${
                     active
                       ? "bg-accent/10 text-accent"
@@ -277,7 +305,7 @@ export default function Sidebar() {
                   }
                 `}
               >
-                {/* Icon container */}
+                {/* Icon */}
 
                 <span
                   className="
@@ -314,9 +342,9 @@ export default function Sidebar() {
         </nav>
       </aside>
 
-      {/* =========================================================
-          MOBILE MENU
-          ========================================================= */}
+      {/* =====================================================
+          MOBILE BUTTON
+          ===================================================== */}
 
       <motion.button
         onClick={() => setMobileOpen(true)}
@@ -345,6 +373,10 @@ export default function Sidebar() {
         />
       </motion.button>
 
+      {/* =====================================================
+          MOBILE DRAWER
+          ===================================================== */}
+
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -364,7 +396,7 @@ export default function Sidebar() {
               "
             />
 
-            {/* Mobile drawer */}
+            {/* Drawer */}
 
             <motion.div
               initial={{ x: "100%" }}
@@ -427,7 +459,10 @@ export default function Sidebar() {
 
               <NavList
                 activeId={activeId}
-                onNavigate={() => setMobileOpen(false)}
+                onNavigate={(id) => {
+                  navigateTo(id);
+                  setMobileOpen(false);
+                }}
               />
             </motion.div>
           </>

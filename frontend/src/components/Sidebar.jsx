@@ -346,32 +346,34 @@ export default function Sidebar() {
           MOBILE BUTTON
           ===================================================== */}
 
-      <motion.button
-        onClick={() => setMobileOpen(true)}
-        whileTap={{ scale: 0.95 }}
-        className="
-          lg:hidden
-          fixed
-          bottom-5
-          right-5
-          z-40
-          w-12
-          h-12
-          rounded-full
-          bg-accent
-          text-white
-          shadow-lg
-          flex
-          items-center
-          justify-center
-        "
-        aria-label="Open section navigation"
-      >
-        <Menu
-          size={20}
-          strokeWidth={2.25}
-        />
-      </motion.button>
+<motion.button
+  onClick={() => setMobileOpen(true)}
+  whileTap={{ scale: 0.95 }}
+  className="
+    lg:hidden
+    fixed
+    top-4
+    left-4
+    z-[100]
+    w-11
+    h-11
+    rounded-lg
+    bg-surface
+    border
+    border-border
+    text-ink
+    shadow-card
+    flex
+    items-center
+    justify-center
+  "
+  aria-label="Open section navigation"
+>
+  <Menu
+    size={21}
+    strokeWidth={2.25}
+  />
+</motion.button>
 
       {/* =====================================================
           MOBILE DRAWER

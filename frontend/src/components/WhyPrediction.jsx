@@ -40,11 +40,23 @@ function CustomTooltip({ active, payload }) {
 // edge, flipping side automatically based on the bar's sign -- recharts'
 // built-in LabelList position="right" doesn't handle diverging
 // positive/negative bars around a center 0 line on its own.
+//
+// IMPORTANT: for negative bars, Recharts reports `x` as the CENTER/zero
+// line (not the bar's left edge) and `width` as a NEGATIVE number
+// extending leftward -- not the left-edge+positive-width shape you'd
+// assume from the positive-bar case. Using `x - 6` directly therefore
+// landed the label just inside the zero line, i.e. ON TOP of the teal
+// bar itself (invisible for large bars since the label's teal text color
+// matched the teal bar fill; barely visible as a sliver for small ones).
+// Math.min/max normalizes this regardless of which convention Recharts
+// hands back, so the label always lands truly outside the bar.
 function ValueLabel(isDark) {
   return function renderLabel(props) {
     const { x, y, width, height, value } = props;
     const isIncrease = value >= 0;
-    const labelX = isIncrease ? x + width + 6 : x - 6;
+    const leftEdge = Math.min(x, x + width);
+    const rightEdge = Math.max(x, x + width);
+    const labelX = isIncrease ? rightEdge + 6 : leftEdge - 6;
     const color = isIncrease ? INCREASE_COLOR : DECREASE_COLOR;
 
     return (

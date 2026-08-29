@@ -16,44 +16,6 @@ const HORIZON_TABS = [
   { horizon: 3, label: "72h" },
 ];
 
-// Mobile-only alternative to the bar chart: a ranked list with inline
-// progress bars. Horizontal bar charts need real width to stay legible
-// (long feature names + a value label on each end) -- on a narrow phone
-// screen that space just isn't there, so instead of shrinking everything
-// into illegibility, mobile gets a different SHAPE for the same data.
-function MobileFeatureList({ chartData, maxAbs }) {
-  return (
-    <div className="flex flex-col gap-3.5">
-      {chartData.map((item) => {
-        const isIncrease = item.shap_value >= 0;
-        const color = isIncrease ? INCREASE_COLOR : DECREASE_COLOR;
-        const pct = maxAbs ? Math.min(100, (Math.abs(item.shap_value) / maxAbs) * 100) : 0;
-
-        return (
-          <div key={item.feature}>
-            <div className="flex items-center justify-between mb-1 gap-2">
-              <span className="text-sm font-medium text-ink truncate">{item.feature}</span>
-              <span className="text-sm font-semibold shrink-0" style={{ color }}>
-                {isIncrease ? "+" : ""}
-                {item.shap_value}
-              </span>
-            </div>
-            <div className="h-2 rounded-full bg-canvas overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${pct}%` }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="h-full rounded-full"
-                style={{ backgroundColor: color }}
-              />
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function CustomTooltip({ active, payload }) {
   if (!active || !payload || !payload.length) return null;
   const p = payload[0].payload;
@@ -250,60 +212,52 @@ export default function WhyPrediction() {
               </div>
             </div>
 
-            {/* Mobile only: ranked list with inline progress bars */}
-            <div className="sm:hidden">
-              <MobileFeatureList chartData={chartData} maxAbs={maxAbs} />
-            </div>
-
-            {/* Tablet/desktop: the horizontal bar chart */}
-            <div className="hidden sm:block">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={showAll ? "all" : "top"}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 34)}>
-                    <BarChart
-                      data={chartData}
-                      layout="vertical"
-                      margin={{ top: 4, right: 44, left: 4, bottom: 4 }}
-                      barCategoryGap={10}
-                    >
-                      <XAxis
-                        type="number"
-                        domain={[-maxAbs * 1.25, maxAbs * 1.25]}
-                        tick={{ fontSize: 11, fill: tickColor }}
-                        axisLine={false}
-                        tickLine={false}
-                        allowDecimals={false}
-                        tickFormatter={(v) => Math.round(v)}
-                      />
-                      <YAxis
-                        type="category"
-                        dataKey="feature"
-                        width={150}
-                        tick={{ fontSize: 11.5, fill: yTickColor, fontWeight: 500 }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <ReferenceLine x={0} stroke={referenceLineStroke} />
-                      <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorFill }} />
-                      <Bar dataKey="shap_value" radius={5} animationDuration={500} barSize={18}>
-                        {chartData.map((entry, i) => (
-                          <Cell
-                            key={i}
-                            fill={entry.shap_value >= 0 ? INCREASE_COLOR : DECREASE_COLOR}
-                          />
-                        ))}
-                        <LabelList dataKey="shap_value" content={ValueLabel(isDark)} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={showAll ? "all" : "top"}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+              >
+                <ResponsiveContainer width="100%" height={Math.max(280, chartData.length * 34)}>
+                  <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{ top: 4, right: 44, left: 4, bottom: 4 }}
+                    barCategoryGap={10}
+                  >
+                    <XAxis
+                      type="number"
+                      domain={[-maxAbs * 1.25, maxAbs * 1.25]}
+                      tick={{ fontSize: 11, fill: tickColor }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                      tickFormatter={(v) => Math.round(v)}
+                    />
+                    <YAxis
+                      type="category"
+                      dataKey="feature"
+                      width={150}
+                      tick={{ fontSize: 11.5, fill: yTickColor, fontWeight: 500 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <ReferenceLine x={0} stroke={referenceLineStroke} />
+                    <Tooltip content={<CustomTooltip />} cursor={{ fill: cursorFill }} />
+                    <Bar dataKey="shap_value" radius={5} animationDuration={500} barSize={18}>
+                      {chartData.map((entry, i) => (
+                        <Cell
+                          key={i}
+                          fill={entry.shap_value >= 0 ? INCREASE_COLOR : DECREASE_COLOR}
+                        />
+                      ))}
+                      <LabelList dataKey="shap_value" content={ValueLabel(isDark)} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </motion.div>
+            </AnimatePresence>
 
             {hasMore && (
               <button

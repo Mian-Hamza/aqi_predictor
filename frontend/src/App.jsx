@@ -72,8 +72,16 @@ export default function App() {
     loadAll();
   }, [loadAll]);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
+    try {
+      // Clears the backend's TTL cache first -- otherwise a manual refresh
+      // within the cache window would just return the same stale result.
+      await api.forceRefresh();
+    } catch {
+      // Non-fatal: if this endpoint is unreachable for some reason, still
+      // fall through to loadAll() below rather than blocking the refresh.
+    }
     loadAll();
   };
 

@@ -1,7 +1,11 @@
 [project]
+
 name = "aqi-predictor"
+
 version = "1.0.0"
+
 description = "AQI prediction FastAPI backend"
+
 requires-python = "==3.12.*"
 
 dependencies = [
@@ -20,3 +24,6 @@ dependencies = [
 
 [tool.fastapi]
 entrypoint = "main:app"
+
+[tool.setuptools]
+py-modules = ["main", "cache_utils"]

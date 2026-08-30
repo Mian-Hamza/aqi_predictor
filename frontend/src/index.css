@@ -49,3 +49,36 @@ body {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+  Skeleton loading blocks -- a solid base color with a light-band gradient
+  that sweeps across via a pseudo-element (rather than just Tailwind's
+  built-in opacity `animate-pulse`, which reads flatter/less polished).
+  The highlight opacity differs per theme: white-on-light-border needs a
+  stronger highlight to read, while dark mode needs a much subtler one or
+  it looks blown out.
+*/
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: rgb(var(--color-border));
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  animation: skeleton-shimmer 1.5s infinite;
+}
+
+.dark .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

@@ -9,7 +9,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import TrendChart, { TREND_RANGES } from "./components/TrendChart.jsx";
 import { ForecastCards, PredictedTrendChart } from "./components/Forecast.jsx";
 import WhyPrediction from "./components/WhyPrediction.jsx";
-import LoadingScreen from "./components/LoadingScreen.jsx";
+import DashboardSkeleton from "./components/Skeleton.jsx";
 
 const POLLUTANT_META = [
   { key: "pm25", label: "PM2.5", icon: Atom },
@@ -95,7 +95,11 @@ export default function App() {
 
           <div className="flex-1 min-w-0">
             <AnimatePresence mode="wait">
-              {loading && <LoadingScreen key="loading" />}
+              {loading && (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <DashboardSkeleton />
+                </motion.div>
+              )}
 
               {!loading && error && (
                 <motion.div

@@ -9,6 +9,7 @@ import Sidebar from "./components/Sidebar.jsx";
 import TrendChart, { TREND_RANGES } from "./components/TrendChart.jsx";
 import { ForecastCards, PredictedTrendChart } from "./components/Forecast.jsx";
 import WhyPrediction from "./components/WhyPrediction.jsx";
+import LoadingScreen from "./components/LoadingScreen.jsx";
 
 const POLLUTANT_META = [
   { key: "pm25", label: "PM2.5", icon: Atom },
@@ -89,117 +90,111 @@ export default function App() {
           refreshing={refreshing}
         />
 
-        <Sidebar />
+        <div className="flex gap-4 items-start">
+          <Sidebar />
 
-        <AnimatePresence mode="wait">
-          {loading && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="text-center py-24 text-muted"
-            >
-              Loading air quality data…
-            </motion.div>
-          )}
+          <div className="flex-1 min-w-0">
+            <AnimatePresence mode="wait">
+              {loading && <LoadingScreen key="loading" />}
 
-          {!loading && error && (
-            <motion.div
-              key="error"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 rounded-card p-6 text-sm"
-            >
-              <p className="font-semibold mb-1">Couldn't load data</p>
-              <p>{error}</p>
-              <p className="text-xs text-red-500 dark:text-red-400/80 mt-2">
-                Make sure the backend is running at the configured API URL.
-              </p>
-            </motion.div>
-          )}
-
-          {!loading && !error && current && (
-            <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <Section title="">
-                <CurrentAqiPanel current={current} />
-              </Section>
-
-              <Section id="pollutants" title="Current Pollutants" caption={`Live pollutant concentrations at ${cityName}`}>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {POLLUTANT_META.map((p, i) => (
-                    <StatCard
-                      key={p.key}
-                      icon={p.icon}
-                      label={p.label}
-                      value={current.pollutants[p.key]}
-                      unit="µg/m³"
-                      index={i}
-                    />
-                  ))}
-                </div>
-              </Section>
-
-              {trend && (
-                <Section
-                  id="trend"
-                  title={`${trendHours}-Hour AQI Trend`}
-                  caption={`Air quality changes over the last ${trendHours} hours`}
+              {!loading && error && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 text-red-700 dark:text-red-400 rounded-card p-6 text-sm"
                 >
-                  <TrendChart
-                    trend={trend}
-                    color={current.color}
-                    hours={trendHours}
-                    onHoursChange={handleTrendHoursChange}
-                    loading={trendLoading}
-                  />
-                </Section>
+                  <p className="font-semibold mb-1">Couldn't load data</p>
+                  <p>{error}</p>
+                  <p className="text-xs text-red-500 dark:text-red-400/80 mt-2">
+                    Make sure the backend is running at the configured API URL.
+                  </p>
+                </motion.div>
               )}
 
-              <Section id="conditions" title="Current Conditions" caption="Weather variables at time of measurement">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {CONDITION_META.map((c, i) => (
-                    <StatCard
-                      key={c.key}
-                      icon={c.icon}
-                      label={c.label}
-                      value={current.conditions[c.key]}
-                      unit={c.unit}
-                      index={i}
-                    />
-                  ))}
-                </div>
-              </Section>
-
-              {forecast ? (
-                <>
-                  <Section title="AI Air Quality Forecast" caption="Predicted AQI for the next three days">
-                    <ForecastCards forecast={forecast} />
+              {!loading && !error && current && (
+                <motion.div key="content" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <Section title="">
+                    <CurrentAqiPanel current={current} />
                   </Section>
 
-                  <Section id="prediction" title="Predicted AQI Trend" caption="Today through 72-hour AI forecast">
-                    <PredictedTrendChart forecast={forecast} />
+                  <Section id="pollutants" title="Current Pollutants" caption={`Live pollutant concentrations at ${cityName}`}>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                      {POLLUTANT_META.map((p, i) => (
+                        <StatCard
+                          key={p.key}
+                          icon={p.icon}
+                          label={p.label}
+                          value={current.pollutants[p.key]}
+                          unit="µg/m³"
+                          index={i}
+                        />
+                      ))}
+                    </div>
                   </Section>
 
-                  <Section id="shap" title="">
-                    <WhyPrediction />
+                  {trend && (
+                    <Section
+                      id="trend"
+                      title={`${trendHours}-Hour AQI Trend`}
+                      caption={`Air quality changes over the last ${trendHours} hours`}
+                    >
+                      <TrendChart
+                        trend={trend}
+                        color={current.color}
+                        hours={trendHours}
+                        onHoursChange={handleTrendHoursChange}
+                        loading={trendLoading}
+                      />
+                    </Section>
+                  )}
+
+                  <Section id="conditions" title="Current Conditions" caption="Weather variables at time of measurement">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {CONDITION_META.map((c, i) => (
+                        <StatCard
+                          key={c.key}
+                          icon={c.icon}
+                          label={c.label}
+                          value={current.conditions[c.key]}
+                          unit={c.unit}
+                          index={i}
+                        />
+                      ))}
+                    </div>
                   </Section>
-                </>
-              ) : (
-                <Section id="prediction" title="AI Air Quality Forecast">
-                  <div className="bg-surface border border-border rounded-card p-6 text-sm text-muted">
-                    Not enough historical data yet to generate a forecast, or no trained models are
-                    registered yet.
-                  </div>
-                </Section>
+
+                  {forecast ? (
+                    <>
+                      <Section title="AI Air Quality Forecast" caption="Predicted AQI for the next three days">
+                        <ForecastCards forecast={forecast} />
+                      </Section>
+
+                      <Section id="prediction" title="Predicted AQI Trend" caption="Today through 72-hour AI forecast">
+                        <PredictedTrendChart forecast={forecast} />
+                      </Section>
+
+                      <Section id="shap" title="">
+                        <WhyPrediction />
+                      </Section>
+                    </>
+                  ) : (
+                    <Section id="prediction" title="AI Air Quality Forecast">
+                      <div className="bg-surface border border-border rounded-card p-6 text-sm text-muted">
+                        Not enough historical data yet to generate a forecast, or no trained models are
+                        registered yet.
+                      </div>
+                    </Section>
+                  )}
+
+                  <p className="text-center text-xs text-muted mt-10">
+                   Air-quality monitoring for {cityName}
+                  </p>
+                </motion.div>
               )}
-
-              <p className="text-center text-xs text-muted mt-10">
-               Air-quality monitoring for {cityName}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
     </div>
   );

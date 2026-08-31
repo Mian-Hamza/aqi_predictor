@@ -406,9 +406,9 @@ def compute_shap_explanation(model_name: str, version: int, model, X_today: pd.D
     }
 
 
-# ---------------------------------------------------------------------------
+
 # ROUTES
-# ---------------------------------------------------------------------------
+
 
 @app.get("/api/health")
 def health():

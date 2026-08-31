@@ -2,8 +2,7 @@ name: Daily Training Pipeline
 
 on:
   schedule:
-    # Runs once a day at 02:00 UTC. Adjust the hour if you want it to run
-    # right after a specific time in Lahore local time instead.
+    # Runs once a day at 02:00 UTC. 
     - cron: "0 2 * * *"
   workflow_dispatch:
     # Lets you trigger it manually from the Actions tab, for testing

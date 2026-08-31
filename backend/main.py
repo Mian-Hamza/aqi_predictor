@@ -449,70 +449,7 @@ def get_current():
             "wind_speed": _safe_round(latest.get("wind_speed")),
         },
     }
-@app.get("/api/refresh")
-def force_refresh():
-    """
-    Force a fresh AQI data fetch.
 
-    Clears the backend's hourly data cache so the next request
-    reads the latest data from Hopsworks instead of using the
-    existing DATA_TTL cache.
-    """
-    _require_env()
-
-    # Clear cached hourly dataset
-    _data_cache["df"] = None
-    _data_cache["ts"] = 0.0
-
-    # Fetch fresh data from Hopsworks
-    df = fetch_hourly_dataset()
-
-    if df.empty:
-        raise HTTPException(
-            404,
-            "No data available yet for this city."
-        )
-
-    latest = df.iloc[-1]
-
-    aqi = float(latest["aqi"])
-    label, color, guidance = aqi_category(aqi)
-
-    return {
-        "success": True,
-        "message": "Data refreshed successfully.",
-        "city": CITY_NAME,
-        "timestamp": latest["timestamp"].isoformat(),
-        "aqi": _safe_round(aqi),
-        "category": label,
-        "color": color,
-        "guidance": guidance,
-        "aqi_change": _safe_round(
-            latest.get("aqi_change", 0.0)
-        ),
-        "pollutants": {
-            "pm25": _safe_round(latest.get("pm25")),
-            "pm10": _safe_round(latest.get("pm10")),
-            "o3": _safe_round(latest.get("o3")),
-            "no2": _safe_round(latest.get("no2")),
-            "so2": _safe_round(latest.get("so2")),
-            "co": _safe_round(latest.get("co")),
-        },
-        "conditions": {
-            "temperature": _safe_round(
-                latest.get("temperature")
-            ),
-            "humidity": _safe_round(
-                latest.get("humidity")
-            ),
-            "pressure": _safe_round(
-                latest.get("pressure")
-            ),
-            "wind_speed": _safe_round(
-                latest.get("wind_speed")
-            ),
-        },
-    }
 
 TREND_HOURS = [24, 48, 72]
 

@@ -21,13 +21,13 @@ https://aqi-predictor-green.vercel.app/
 - SHAP-based explainability showing why a prediction is higher or lower.
 - Responsive React dashboard for desktop and mobile devices.
 - Live data refresh through the FastAPI backend.
-- Secure backend architecture that keeps Hopsworks credentials away from the frontend. :contentReference[oaicite:2]{index=2} :contentReference[oaicite:3]{index=3}
+- Secure backend architecture that keeps Hopsworks credentials away from the frontend. 
 
 ## How it works
 
 The system follows an automated data-to-prediction pipeline:
 
-```text
+
              ┌────────────────────┐
              │     Open-Meteo     │
              │ Weather + AQ Data  │
@@ -69,9 +69,10 @@ The system follows an automated data-to-prediction pipeline:
              │      (Vercel)      │
              └────────────────────┘
 
+
 ## Project Structure
 
-```text
+
 AQI_PREDICTOR/
 │
 ├── .github/
@@ -136,8 +137,10 @@ AQI_PREDICTOR/
 │
 ├── .env
 ├── .gitignore
+├── LICENSE
 ├── README.md
 └── requirements.txt
+
 
 ## Automation
 

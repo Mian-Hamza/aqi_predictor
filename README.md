@@ -72,75 +72,73 @@ The system follows an automated data-to-prediction pipeline:
 
 ## Project Structure
 
-
-AQI_PREDICTOR/
-│
-├── .github/
-│   └── workflows/
-│       ├── feature_pipeline.yml
-│       └── training_pipeline.yml
-│
-├── .vscode/
-│
-├── backend/
-│   ├── __pycache__/
-│   ├── .hopsworks_cache/
-│   ├── .python-version
-│   ├── main.py
-│   ├── pyproject.toml
-│   └── requirements.txt
-│
-├── backfill/
-│   └── backfill.py
-│
-├── feature_pipeline/
-│   ├── __pycache__/
-│   └── feature_pipeline.py
-│
-├── frontend/
-│   ├── dist/
-│   ├── node_modules/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── AqiGauge.jsx
-│   │   │   ├── Common.jsx
-│   │   │   ├── CurrentAqiPanel.jsx
-│   │   │   ├── Forecast.jsx
-│   │   │   ├── Header.jsx
-│   │   │   ├── Sidebar.jsx
-│   │   │   ├── Skeleton.jsx
-│   │   │   ├── TrendChart.jsx
-│   │   │   └── WhyPrediction.jsx
-│   │   │
-│   │   ├── lib/
-│   │   │   ├── api.js
-│   │   │   ├── aqiColor.js
-│   │   │   └── ThemeContext.jsx
-│   │   │
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   │
-│   ├── public/
-│   │   └── favicon.svg
-│   │
-│   ├── index.html
-│   ├── package-lock.json
-│   ├── package.json
-│   ├── postcss.config.js
-│   ├── tailwind.config.js
-│   └── vite.config.js
-│
-├── notebooks/
-│
-├── training_pipeline/
-│
-├── .env
-├── .gitignore
-├── LICENSE
-├── README.md
-└── requirements.txt
-
+    AQI_PREDICTOR/
+    │
+    ├── .github/
+    │   └── workflows/
+    │       ├── feature_pipeline.yml
+    │       └── training_pipeline.yml
+    │
+    ├── .vscode/
+    │
+    ├── backend/
+    │   ├── __pycache__/
+    │   ├── .hopsworks_cache/
+    │   ├── .python-version
+    │   ├── main.py
+    │   ├── pyproject.toml
+    │   └── requirements.txt
+    │
+    ├── backfill/
+    │   └── backfill.py
+    │
+    ├── feature_pipeline/
+    │   ├── __pycache__/
+    │   └── feature_pipeline.py
+    │
+    ├── frontend/
+    │   ├── dist/
+    │   ├── node_modules/
+    │   ├── src/
+    │   │   ├── components/
+    │   │   │   ├── AqiGauge.jsx
+    │   │   │   ├── Common.jsx
+    │   │   │   ├── CurrentAqiPanel.jsx
+    │   │   │   ├── Forecast.jsx
+    │   │   │   ├── Header.jsx
+    │   │   │   ├── Sidebar.jsx
+    │   │   │   ├── Skeleton.jsx
+    │   │   │   ├── TrendChart.jsx
+    │   │   │   └── WhyPrediction.jsx
+    │   │   │
+    │   │   ├── lib/
+    │   │   │   ├── api.js
+    │   │   │   ├── aqiColor.js
+    │   │   │   └── ThemeContext.jsx
+    │   │   │
+    │   │   ├── App.jsx
+    │   │   ├── index.css
+    │   │   └── main.jsx
+    │   │
+    │   ├── public/
+    │   │   └── favicon.svg
+    │   │
+    │   ├── index.html
+    │   ├── package-lock.json
+    │   ├── package.json
+    │   ├── postcss.config.js
+    │   ├── tailwind.config.js
+    │   └── vite.config.js
+    │
+    ├── notebooks/
+    │
+    ├── training_pipeline/
+    │
+    ├── .env
+    ├── .gitignore
+    ├── LICENSE
+    ├── README.md
+    └── requirements.txt
 
 ## Automation
 
@@ -151,7 +149,6 @@ GitHub Actions automates the main data collection and machine learning pipelines
 | **Feature Pipeline** | Every hour | Collects the latest weather and air-quality data, performs feature engineering, calculates and stores AQI information, and updates the Hopsworks Feature Store. |
 | **Training Pipeline** | Every day | Retrieves the latest feature data, trains the forecasting models, evaluates their performance, and registers the best models in Hopsworks. |
 | **AQI Forecasting** | Continuous | Uses separate machine learning models to generate **24-hour, 48-hour, and 72-hour** AQI forecasts. |
-
 
 ## License
 

@@ -7,6 +7,8 @@ The project uses Open-Meteo for weather and air-quality data, Hopsworks for feat
 **Live Project:**  
 https://aqi-predictor-green.vercel.app/
 
+![Pearls AQI Predictor Dashboard](screenshots/dashboard.png)
+
 ## Features
 
 - Current AQI monitoring with AQI category and health guidance.

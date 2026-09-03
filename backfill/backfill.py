@@ -1,9 +1,9 @@
 """
 backfill.py
 
-Fetches ~2 years of HISTORICAL weather + air-quality data for the city from
-Open-Meteo (no API key needed), engineers the exact same features as
-feature_pipeline.py, and bulk-inserts them into a Hopsworks Feature Group.
+this pipeline fetches 2 years of historical data (weather + air quality) for the city from Open-Meteo (no API),
+and engineers the exact same features as in feature_pipeline.py , adn inserts them into HopsWorks feature group.
+
 
 Data sources (both free, no API key, no rate-limit key required for
 non-commercial use up to 10,000 requests/day):

@@ -27,6 +27,11 @@ based pipeline -- the EPA formula itself is standard either way.
 No API key is required for Open-Meteo (non-commercial use, reasonable
 request volumes).
 
+RELIABILITY NOTE: GitHub Actions runners share IP addresses, and Open-Meteo
+sometimes times out on them. All Open-Meteo calls therefore go through
+_get_json_with_retries(), which retries on timeouts, connection errors and
+transient HTTP errors (429 / 5xx) with an increasing wait between attempts.
+
 Env vars required (put these in a local .env file, and as GitHub Secrets later):
   HOPSWORKS_API_KEY    -> from Hopsworks Account Settings -> API keys
   HOPSWORKS_PROJECT    -> your Hopsworks project name
@@ -37,6 +42,7 @@ Env vars required (put these in a local .env file, and as GitHub Secrets later):
 """
 
 import os
+import time
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
@@ -63,6 +69,12 @@ REQUIRED_ENV_VARS = (
 
 DAY_NAMES = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
+# Retry settings for external API calls
+API_MAX_ATTEMPTS = 5
+API_TIMEOUT = (15, 45)  # (connect timeout, read timeout) in seconds
+API_RETRY_WAIT_STEP = 5  # waits 5s, 10s, 15s, 20s between attempts
+RETRYABLE_STATUS_CODES = {429, 500, 502, 503, 504}
+
 
 def _require_env() -> None:
     missing = [name for name in REQUIRED_ENV_VARS if not os.getenv(name)]
@@ -85,6 +97,56 @@ def _to_float(value, default: float = 0.0) -> float:
 # 1. FETCH RAW DATA -- both from Open-Meteo
 # ---------------------------------------------------------------------------
 
+def _get_json_with_retries(
+    url: str,
+    params: dict,
+    max_attempts: int = API_MAX_ATTEMPTS,
+    timeout=API_TIMEOUT,
+    label: str = "API",
+) -> dict:
+    """
+    GET a URL and return the parsed JSON, retrying on transient failures:
+      - timeouts and connection errors
+      - HTTP 429 / 5xx responses
+    Non-retryable errors (e.g. 400 / 404) are raised immediately.
+    If every attempt fails, the last error is raised so the run fails loudly
+    instead of silently writing gaps into the feature store.
+    """
+    last_err = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            resp = requests.get(url, params=params, timeout=timeout)
+
+            if resp.status_code in RETRYABLE_STATUS_CODES:
+                raise requests.exceptions.HTTPError(
+                    f"{resp.status_code} from {label}", response=resp
+                )
+
+            resp.raise_for_status()
+            return resp.json()
+
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            last_err = e
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status not in RETRYABLE_STATUS_CODES:
+                raise  # e.g. 400 / 404: retrying won't help
+            last_err = e
+
+        if attempt < max_attempts:
+            wait = API_RETRY_WAIT_STEP * attempt
+            print(
+                f"{label} attempt {attempt}/{max_attempts} failed: {last_err}. "
+                f"Retrying in {wait}s..."
+            )
+            time.sleep(wait)
+        else:
+            print(f"{label} attempt {attempt}/{max_attempts} failed: {last_err}. Giving up.")
+
+    raise last_err
+
+
 def fetch_openmeteo_pollution(lat: float, lon: float) -> dict:
     """
     Fetch current pollutant concentrations AND the ready-made US EPA AQI
@@ -92,17 +154,15 @@ def fetch_openmeteo_pollution(lat: float, lon: float) -> dict:
     Open-Meteo using the standard EPA breakpoint methodology (0-500 scale) --
     the same thing calculate_us_aqi() used to compute manually.
     """
-    resp = requests.get(
+    payload = _get_json_with_retries(
         "https://air-quality-api.open-meteo.com/v1/air-quality",
         params={
             "latitude": lat,
             "longitude": lon,
             "current": "us_aqi,pm2_5,pm10,nitrogen_dioxide,sulphur_dioxide,ozone,carbon_monoxide",
         },
-        timeout=15,
+        label="Open-Meteo air quality",
     )
-    resp.raise_for_status()
-    payload = resp.json()
 
     current = payload.get("current")
     if not current:
@@ -121,17 +181,15 @@ def fetch_openmeteo_pollution(lat: float, lon: float) -> dict:
 
 def fetch_openmeteo_weather(lat: float, lon: float) -> dict:
     """Fetch current weather readings from Open-Meteo's Forecast API."""
-    resp = requests.get(
+    payload = _get_json_with_retries(
         "https://api.open-meteo.com/v1/forecast",
         params={
             "latitude": lat,
             "longitude": lon,
             "current": "temperature_2m,apparent_temperature,relative_humidity_2m,surface_pressure,wind_speed_10m",
         },
-        timeout=15,
+        label="Open-Meteo weather",
     )
-    resp.raise_for_status()
-    payload = resp.json()
 
     current = payload.get("current")
     if not current:
